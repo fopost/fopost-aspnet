@@ -41,7 +41,7 @@ public static class FoPostWebhookSignature
             : header.AsSpan();
 
         Span<byte> provided = stackalloc byte[DigestBytes];
-        if (!Convert.TryFromHexString(hex, provided, out var written) || written != DigestBytes)
+        if (!TryParseHex(hex, provided))
         {
             return false;
         }
@@ -50,5 +50,40 @@ public static class FoPostWebhookSignature
         HMACSHA256.HashData(Encoding.UTF8.GetBytes(secret), body, expected);
 
         return CryptographicOperations.FixedTimeEquals(expected, provided);
+    }
+
+    // Convert.TryFromHexString does not exist on net8.0/net9.0, and Convert.FromHexString
+    // throws on malformed input that an attacker controls. Parse it ourselves instead.
+    private static bool TryParseHex(ReadOnlySpan<char> hex, Span<byte> destination)
+    {
+        if (hex.Length != destination.Length * 2)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < destination.Length; i++)
+        {
+            if (!TryParseNibble(hex[i * 2], out var high) || !TryParseNibble(hex[(i * 2) + 1], out var low))
+            {
+                return false;
+            }
+
+            destination[i] = (byte)((high << 4) | low);
+        }
+
+        return true;
+    }
+
+    private static bool TryParseNibble(char c, out int value)
+    {
+        value = c switch
+        {
+            >= '0' and <= '9' => c - '0',
+            >= 'a' and <= 'f' => c - 'a' + 10,
+            >= 'A' and <= 'F' => c - 'A' + 10,
+            _ => -1,
+        };
+
+        return value >= 0;
     }
 }
