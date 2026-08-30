@@ -48,6 +48,18 @@ app.MapPost("/drafts", async (
     return Results.Created($"/drafts/{post.Id}", new { post.Id, post.Status });
 });
 
+// Publishing is create, then publish. It returns once delivery is queued, not once the
+// post is live — the webhook above is how you learn it went out.
+app.MapPost("/drafts/{id}/publish", async (
+    string id,
+    FoPostClient fopost,
+    CancellationToken cancellationToken) =>
+{
+    await fopost.Posts.PublishAsync(id, cancellationToken);
+
+    return Results.Accepted($"/drafts/{id}");
+});
+
 app.Run();
 
 public sealed record DraftRequest(string WorkspaceId, string Text, List<string> Accounts);
