@@ -9,7 +9,9 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- Doc comments cover the API surface; the compiler nagging about every
          member is noise we do not want failing the build. -->
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <!-- CA1416: SocketsHttpHandler is unsupported in a browser. This library requires
+         Microsoft.AspNetCore.App, so it never runs in one. -->
+    <NoWarn>$(NoWarn);CS1591;CA1416</NoWarn>
     <Deterministic>true</Deterministic>
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
     <RootNamespace>FoPost.AspNetCore</RootNamespace>

@@ -91,9 +91,7 @@ internal static class FoPostWebhookEndpoint
     private static async Task<ReadOnlyMemory<byte>> ReadBodyAsync(HttpContext context)
     {
         // The signature covers the bytes on the wire, so nothing may re-encode them first.
-        using var buffer = context.Request.ContentLength is { } length and > 0 and < int.MaxValue
-            ? new MemoryStream((int)length)
-            : new MemoryStream();
+        using var buffer = new MemoryStream();
 
         await context.Request.Body.CopyToAsync(buffer, context.RequestAborted).ConfigureAwait(false);
 
@@ -116,7 +114,7 @@ internal static class FoPostWebhookEndpoint
         DateTimeOffset.TryParse(
             ReadString(payload, "timestamp"),
             CultureInfo.InvariantCulture,
-            DateTimeStyles.RoundtripKind,
+            DateTimeStyles.None,
             out var parsed)
             ? parsed
             : null;

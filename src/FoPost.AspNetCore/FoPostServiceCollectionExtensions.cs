@@ -83,7 +83,7 @@ public static class FoPostServiceCollectionExtensions
             // FoPostClient is a singleton, so it holds its HttpClient for the life of the app and
             // handler rotation would never happen. Pool the connections instead, which is what
             // keeps DNS from going stale.
-            .SetHandlerLifetime(System.Threading.Timeout.InfiniteTimeSpan)
+            .SetHandlerLifetime(global::System.Threading.Timeout.InfiniteTimeSpan)
             .ConfigurePrimaryHttpMessageHandler(static () => new SocketsHttpHandler
             {
                 PooledConnectionLifetime = TimeSpan.FromMinutes(2),

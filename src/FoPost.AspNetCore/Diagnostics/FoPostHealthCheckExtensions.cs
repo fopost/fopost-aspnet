@@ -32,6 +32,6 @@ public static class FoPostHealthCheckExtensions
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        return builder.AddCheck<FoPostHealthCheck>(name, failureStatus, tags ?? [], timeout);
+        return builder.AddCheck<FoPostHealthCheck>(name, failureStatus, tags, timeout);
     }
 }
