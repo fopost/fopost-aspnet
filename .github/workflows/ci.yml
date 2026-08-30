@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+
+      # ── Parent-from-source shim ──────────────────────────────────────────
+      # FoPost.Sdk is not on NuGet yet, so pack it from the parent repo into the
+      # local-packages/ source that NuGet.config already points at. Delete this
+      # step, the source, and the folder once FoPost.Sdk 0.1.0 is published.
+      - name: Check out FoPost.Sdk
+        uses: actions/checkout@v4
+        with:
+          repository: fopost/fopost-dotnet
+          path: .parent
+          token: ${{ secrets.PARENT_REPO_TOKEN || github.token }}
+
+      - name: Pack FoPost.Sdk into the local feed
+        run: dotnet pack .parent/src/FoPost/FoPost.csproj -c Release -o local-packages
+      # ─────────────────────────────────────────────────────────────────────
+
+      - run: dotnet restore
+
+      - run: dotnet build --configuration Release --no-restore
+
+      - run: dotnet test --configuration Release --no-build --verbosity normal
+
+      # The package is what ships; catch a pack-time break here, not at tag time.
+      - run: dotnet pack src/FoPost.AspNetCore/FoPost.AspNetCore.csproj --configuration Release --no-build --output artifacts
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nupkg
+          path: artifacts/*.nupkg
