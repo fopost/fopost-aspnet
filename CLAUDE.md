@@ -2,13 +2,24 @@
 
 Guidance for Claude Code (claude.ai/code) when working in this repository.
 
-## ⚠️ This repository has never been compiled
+## Build Status
 
-The `dotnet` SDK was not installed on the machine that authored the initial commit, so
-**nothing here has been built, run, or tested locally**. Every type, member, and overload was
-matched by reading the parent SDK's source rather than by compiling against it. CI is the
-first real verification. Do not assume `dotnet build` or `dotnet test` has ever passed — if
-you have a `dotnet` SDK, run both before trusting anything, and fix what falls out.
+Verified locally on 2026-08-30 with .NET SDK 10.0.400 (arm64): `dotnet build -c Release`
+clean on both `net8.0` and `net9.0` with `TreatWarningsAsErrors` on, and **27 tests pass on
+both target frameworks**. The example project builds too.
+
+Two things the first compile caught, worth knowing because both are easy to reintroduce:
+
+- **`Convert.TryFromHexString` does not exist** on `net8.0` or `net9.0`. Only
+  `Convert.FromHexString` does, and it *throws* on malformed input that an attacker controls.
+  `FoPostWebhookSignature` therefore parses the hex digest itself (`TryParseHex`), returning
+  false rather than throwing. Do not "simplify" that back to a BCL call.
+- **`MapPost` needs the handler cast to `Delegate`.** Passed as a lambda it binds the
+  `RequestDelegate` overload, which returns `IEndpointConventionBuilder` and silently
+  **discards the `IResult`** — the analyzer flags this as `ASP0016`.
+
+Note the local runtime is .NET 10 only, so tests were run with `DOTNET_ROLL_FORWARD=Major`.
+CI installs the real 8.0 and 9.0 runtimes and needs no such variable.
 
 ## What This Is
 
