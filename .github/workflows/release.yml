@@ -1,0 +1,67 @@
+name: Release
+
+# Tag the commit as v<version> matching <Version> in
+# src/FoPost.AspNetCore/FoPost.AspNetCore.csproj, e.g. v0.1.0. Publishing needs a
+# NUGET_API_KEY secret on the `nuget` environment.
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    # Gates publishing behind a dedicated environment, so commit access alone does
+    # not grant the ability to push a release to NuGet.
+    environment:
+      name: nuget
+      url: https://www.nuget.org/packages/FoPost.AspNetCore
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+
+      - name: Verify tag matches project version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          VERSION=$(sed -n 's|.*<Version>\(.*\)</Version>.*|\1|p' src/FoPost.AspNetCore/FoPost.AspNetCore.csproj | head -1)
+          [ "$VERSION" = "$TAG" ] || { echo "::error::FoPost.AspNetCore.csproj is $VERSION but tag is $TAG"; exit 1; }
+
+      # Parent-from-source shim — delete once FoPost.Sdk 0.1.0 is on NuGet.
+      - name: Check out FoPost.Sdk
+        uses: actions/checkout@v4
+        with:
+          repository: fopost/fopost-dotnet
+          path: .parent
+          token: ${{ secrets.PARENT_REPO_TOKEN || github.token }}
+
+      - name: Pack FoPost.Sdk into the local feed
+        run: dotnet pack .parent/src/FoPost/FoPost.csproj -c Release -o local-packages
+
+      - run: dotnet restore
+
+      - run: dotnet build --configuration Release --no-restore
+
+      - run: dotnet test --configuration Release --no-build
+
+      - run: dotnet pack src/FoPost.AspNetCore/FoPost.AspNetCore.csproj --configuration Release --no-build --output artifacts
+
+      - name: Publish to NuGet
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        run: >
+          dotnet nuget push "artifacts/*.nupkg"
+          --api-key "${{ secrets.NUGET_API_KEY }}"
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate

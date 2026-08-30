@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <LangVersion>12.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Doc comments cover the API surface; the compiler nagging about every
+         member is noise we do not want failing the build. -->
+    <!-- CA1416: SocketsHttpHandler is unsupported in a browser. This library requires
+         Microsoft.AspNetCore.App, so it never runs in one. -->
+    <NoWarn>$(NoWarn);CS1591;CA1416</NoWarn>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <RootNamespace>FoPost.AspNetCore</RootNamespace>
+    <AssemblyName>FoPost.AspNetCore</AssemblyName>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>FoPost.AspNetCore</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Porter Bridge, LLC</Authors>
+    <Company>Porter Bridge, LLC</Company>
+    <Product>FoPost</Product>
+    <Description>Official ASP.NET Core integration for the FoPost API. Dependency injection, the options pattern, IHttpClientFactory, signature-verified webhook endpoints, and a health check for FoPost.Sdk.</Description>
+    <PackageTags>fopost;aspnetcore;social-media;publishing;scheduling;webhooks;healthcheck;api;sdk</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://fopost.com</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/fopost/fopost-aspnet</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Brings Microsoft.Extensions.{DependencyInjection,Options,Configuration,Http,
+         Logging,Diagnostics.HealthChecks} and the routing/minimal-API surface from the
+         shared framework, so nothing here pins a Microsoft.Extensions.* version against
+         the host app. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="FoPost.Sdk" Version="0.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="FoPost.AspNetCore.Tests" />
+  </ItemGroup>
+
+</Project>
