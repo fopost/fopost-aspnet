@@ -24,8 +24,10 @@ public static class FoPostWebhookEndpointRouteBuilderExtensions
     {
         ArgumentNullException.ThrowIfNull(endpoints);
 
+        // Cast to Delegate so the RouteHandlerBuilder overload wins: the RequestDelegate
+        // overload would silently discard the IResult instead of writing the response.
         return endpoints
-            .MapPost(pattern, static (HttpContext context) => FoPostWebhookEndpoint.HandleAsync(context))
+            .MapPost(pattern, (Delegate)FoPostWebhookEndpoint.HandleAsync)
             .AllowAnonymous();
     }
 }
