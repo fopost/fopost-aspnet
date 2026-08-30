@@ -1,0 +1,17 @@
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.vscode/
+.idea/
+artifacts/
+*.nupkg
+*.snupkg
+TestResults/
+.DS_Store
+
+# Parent-from-source shim — see CLAUDE.md "Parent dependency".
+.parent/
+local-packages/*.nupkg
+local-packages/*.snupkg
