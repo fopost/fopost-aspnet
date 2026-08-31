@@ -20,7 +20,7 @@ adds is the wiring an ASP.NET Core app expects:
 ## Requirements
 
 - .NET 8 or .NET 9
-- A FoPost API key from [app.fopost.com/api-keys](https://app.fopost.com/api-keys)
+- A FoPost API key from [fopost.com/dashboard/api-keys](https://fopost.com/dashboard/api-keys)
 
 ## Installation
 
