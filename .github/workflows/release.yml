@@ -1,8 +1,8 @@
 name: Release
 
 # Tag the commit as v<version> matching <Version> in
-# src/FoPost.AspNetCore/FoPost.AspNetCore.csproj, e.g. v0.1.0. Publishing needs a
-# NUGET_API_KEY secret on the `nuget` environment.
+# src/FoPost.AspNetCore/FoPost.AspNetCore.csproj, e.g. v0.1.0. Publishing authenticates over OIDC
+# against the trusted publishing policy on nuget.org, so no API key is stored.
 on:
   push:
     tags:
@@ -23,6 +23,7 @@ jobs:
       url: https://www.nuget.org/packages/FoPost.AspNetCore
     permissions:
       contents: read
+      id-token: write # trusted publishing
     steps:
       - uses: actions/checkout@v4
 
@@ -58,10 +59,19 @@ jobs:
 
       - run: dotnet pack src/FoPost.AspNetCore/FoPost.AspNetCore.csproj --configuration Release --no-build --output artifacts
 
+      # nuget.org issues a key that is valid for one hour, so ask for it
+      # immediately before the push rather than earlier in the job.
+      - name: Exchange the OIDC token for a short-lived NuGet key
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: fopost
+
       - name: Publish to NuGet
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
         run: >
           dotnet nuget push "artifacts/*.nupkg"
-          --api-key "${{ secrets.NUGET_API_KEY }}"
+          --api-key "${{ steps.login.outputs.NUGET_API_KEY }}"
           --source https://api.nuget.org/v3/index.json
           --skip-duplicate
