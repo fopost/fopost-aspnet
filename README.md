@@ -5,7 +5,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/fopost/fopost-aspnet/ci.yml?branch=main&label=ci)](https://github.com/fopost/fopost-aspnet/actions)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/fopost/fopost-aspnet/blob/main/LICENSE)
 
-Official ASP.NET Core integration for the FoPost API. Schedule and publish to +30 social
+Official ASP.NET Core integration for the [FoPost](https://fopost.com) API. Schedule and publish to +30 social
 platforms from your code.
 
 This package is a thin wrapper around [`FoPost.Sdk`](https://github.com/fopost/fopost-dotnet).
