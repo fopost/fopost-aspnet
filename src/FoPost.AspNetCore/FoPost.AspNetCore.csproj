@@ -20,7 +20,7 @@
 
   <PropertyGroup>
     <PackageId>FoPost.AspNetCore</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <Authors>Porter Bridge, LLC</Authors>
     <Company>Porter Bridge, LLC</Company>
     <Product>FoPost</Product>
