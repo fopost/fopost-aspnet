@@ -75,10 +75,11 @@ That is the documented way to keep DNS fresh behind a long-lived `HttpClient`. D
 
 | Type | Where |
 | --- | --- |
-| `FoPost.FoPostClient` | `FoPostClient.cs` — ctor `FoPostClient(FoPostClientOptions?)`, `Workspaces`, `Posts`, `BaseUrl`, `IDisposable` |
+| `FoPost.FoPostClient` | `FoPostClient.cs` — ctor `FoPostClient(FoPostClientOptions?)`, `Workspaces`, `Posts`, `Media`, `BaseUrl`, `IDisposable` |
 | `FoPost.FoPostClientOptions` | `FoPostClientOptions.cs` — `ApiKey`, `BearerToken`, `BaseUrl`, `Timeout`, `MaxRetries`, `HttpClient`, and the `Default*` constants |
 | `FoPost.FoPostException` and subclasses | `Errors/FoPostException.cs` — `Status`, `Code`, `Body` |
 | `FoPost.Resources.WorkspacesResource.ListAsync` | `Resources/WorkspacesResource.cs` — the health check's probe |
+| `FoPost.Resources.MediaResource` | `Resources/MediaResource.cs` — `PresignAsync`, `CompleteAsync`, `UploadDirectAsync` (direct upload through a signed PUT URL) |
 
 `FoPostClientOptions.HttpClient` is the reason `IHttpClientFactory` integration is possible at
 all: when it is set, the SDK neither configures nor disposes the client. That is documented on

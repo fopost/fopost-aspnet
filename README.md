@@ -200,7 +200,7 @@ the key, the base URL, or a raw provider message.
 All of that lives in `FoPost.Sdk` and is unchanged here: the `FoPostException` hierarchy
 (`FoPostValidationException`, `FoPostAuthenticationException`, `FoPostPaymentRequiredException`,
 `FoPostPermissionDeniedException`, `FoPostNotFoundException`, `FoPostRateLimitException`),
-automatic retries on 429, the `Posts` / `Accounts` / `Workspaces` / `Labels` / `Ai` resources,
+automatic retries on 429, the `Posts` / `Accounts` / `Workspaces` / `Labels` / `Ai` / `Media` resources,
 and `RequestAsync` for endpoints the SDK does not wrap yet.
 
 See the [`FoPost.Sdk` README](https://github.com/fopost/fopost-dotnet) for the full API
