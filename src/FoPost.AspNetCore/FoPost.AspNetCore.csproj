@@ -47,7 +47,7 @@
          shared framework, so nothing here pins a Microsoft.Extensions.* version against
          the host app. -->
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="FoPost.Sdk" Version="0.1.0" />
+    <PackageReference Include="FoPost.Sdk" Version="0.2.0" />
   </ItemGroup>
 
   <ItemGroup>
