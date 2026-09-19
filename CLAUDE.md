@@ -108,7 +108,7 @@ Owned by `FoPost.Sdk`, repeated here only because the webhook endpoint has to kn
 ## Parent dependency
 
 `FoPost.Sdk` is **not published to NuGet yet** (checked 2026-08-30). The manifest still
-declares the real coordinate — `<PackageReference Include="FoPost.Sdk" Version="0.1.0" />` —
+declares the real coordinate — `<PackageReference Include="FoPost.Sdk" Version="0.2.0" />` —
 because that is what ships. To make the build green today, the parent is resolved from source:
 
 - `NuGet.config` adds a `fopost-local` package source pointing at `local-packages/`.
