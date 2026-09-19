@@ -107,24 +107,15 @@ Owned by `FoPost.Sdk`, repeated here only because the webhook endpoint has to kn
 
 ## Parent dependency
 
-`FoPost.Sdk` is **not published to NuGet yet** (checked 2026-08-30). The manifest still
-declares the real coordinate — `<PackageReference Include="FoPost.Sdk" Version="0.2.0" />` —
-because that is what ships. To make the build green today, the parent is resolved from source:
+`FoPost.Sdk` is on NuGet. The manifest declares the real coordinate —
+`<PackageReference Include="FoPost.Sdk" Version="0.2.0" />` — and `NuGet.config` lists only
+`nuget.org`, so restore resolves the parent from there. `release.yml` no longer builds it from source.
 
-- `NuGet.config` adds a `fopost-local` package source pointing at `local-packages/`.
-- Both workflows check out `fopost/fopost-dotnet` into `.parent/` and run
-  `dotnet pack .parent/src/FoPost/FoPost.csproj -c Release -o local-packages` before restore.
-- Locally, do the same:
-  ```bash
-  dotnet pack ../fopost-dotnet/src/FoPost/FoPost.csproj -c Release -o local-packages
-  ```
-
-**Delete the whole shim once `FoPost.Sdk` 0.1.0 is on NuGet**: the two workflow steps, the
-`fopost-local` source in `NuGet.config`, the `local-packages/` folder, and its `.gitignore`
-entries. Nothing else references it.
-
-If `fopost/fopost-dotnet` is private, the cross-repo checkout needs a PAT in the repo secret
-`PARENT_REPO_TOKEN`; the workflows fall back to `github.token` when it is absent.
+`.github/workflows/ci.yml` still has two leftover steps, "Check out FoPost.Sdk" (checks out
+`fopost/fopost-dotnet` into `.parent/`, using `PARENT_REPO_TOKEN` or `github.token`) and "Pack
+FoPost.Sdk into the local feed" (packs it into `local-packages/`). Nothing reads that folder any more,
+so both steps, and the `.parent/` and `local-packages/` entries in `.gitignore`, are no longer needed
+now that the parent is published.
 
 ## Commands
 

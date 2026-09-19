@@ -225,8 +225,7 @@ dotnet test
 dotnet pack src/FoPost.AspNetCore/FoPost.AspNetCore.csproj -c Release
 ```
 
-`FoPost.Sdk` is not on NuGet yet, so a local build needs the parent packed into the
-`local-packages/` feed first — see CLAUDE.md, "Parent dependency".
+`FoPost.Sdk` is on NuGet, so a local build restores the parent from there.
 
 ## License
 
