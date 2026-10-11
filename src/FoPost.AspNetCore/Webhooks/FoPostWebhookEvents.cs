@@ -23,4 +23,10 @@ public static class FoPostWebhookEvents
 
     /// <summary>A connected account's token or health state changed.</summary>
     public const string AccountHealthChanged = "account.health_changed";
+
+    /// <summary>A blog article went live; the website target receives it.</summary>
+    public const string ArticlePublished = "article.published";
+
+    /// <summary>A connection test from the blog settings page.</summary>
+    public const string ArticleTest = "article.test";
 }
