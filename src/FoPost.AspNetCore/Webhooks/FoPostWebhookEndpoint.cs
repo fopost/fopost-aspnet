@@ -1,5 +1,3 @@
-using System.Globalization;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Http;
@@ -31,46 +29,27 @@ internal static class FoPostWebhookEndpoint
             return Results.StatusCode(StatusCodes.Status500InternalServerError);
         }
 
-        var body = await ReadBodyAsync(context).ConfigureAwait(false);
+        var body = await FoPostWebhookRequest.ReadBodyAsync(context).ConfigureAwait(false);
 
-        context.Request.Headers.TryGetValue(FoPostDefaults.SignatureHeader, out var signature);
-        if (!FoPostWebhookSignature.Verify(body.Span, signature.ToString(), options.WebhookSecret))
+        FoPostWebhookEnvelope envelope;
+        try
         {
-            logger.LogWarning("Rejected a FoPost webhook whose signature did not match.");
+            envelope = FoPostWebhooks.Verify(body.Span, FoPostWebhookRequest.Headers(context), options.WebhookSecret);
+        }
+        catch (FoPostWebhookVerificationException)
+        {
+            logger.LogWarning("Rejected a FoPost webhook that did not verify.");
 
             return Results.Unauthorized();
         }
 
-        JsonNode? payload;
-        try
-        {
-            payload = JsonNode.Parse(Encoding.UTF8.GetString(body.Span));
-        }
-        catch (JsonException)
-        {
-            logger.LogWarning("Rejected a signed FoPost webhook whose body was not JSON.");
-
-            return Results.BadRequest();
-        }
-
-        context.Request.Headers.TryGetValue(FoPostDefaults.EventHeader, out var eventHeader);
-        context.Request.Headers.TryGetValue(FoPostDefaults.DeliveryHeader, out var deliveryHeader);
-
-        var name = ReadString(payload, "event") ?? eventHeader.ToString();
-        if (string.IsNullOrEmpty(name))
-        {
-            logger.LogWarning("Rejected a signed FoPost webhook that named no event.");
-
-            return Results.BadRequest();
-        }
-
         var webhookEvent = new FoPostWebhookEvent
         {
-            Event = name,
-            DeliveryId = NullIfEmpty(deliveryHeader.ToString()),
-            Timestamp = ReadTimestamp(payload),
-            Data = (payload as JsonObject)?["data"],
-            Payload = payload,
+            Event = envelope.Event,
+            DeliveryId = envelope.DeliveryId,
+            Timestamp = envelope.Timestamp,
+            Data = envelope.Data.ValueKind is JsonValueKind.Undefined ? null : JsonSerializer.SerializeToNode(envelope.Data),
+            Payload = JsonNode.Parse(body.Span),
             RawBody = body,
         };
 
@@ -87,37 +66,4 @@ internal static class FoPostWebhookEndpoint
 
         return Results.NoContent();
     }
-
-    private static async Task<ReadOnlyMemory<byte>> ReadBodyAsync(HttpContext context)
-    {
-        // The signature covers the bytes on the wire, so nothing may re-encode them first.
-        using var buffer = new MemoryStream();
-
-        await context.Request.Body.CopyToAsync(buffer, context.RequestAborted).ConfigureAwait(false);
-
-        return buffer.ToArray();
-    }
-
-    private static string? ReadString(JsonNode? payload, string field)
-    {
-        if (payload is not JsonObject obj || !obj.TryGetPropertyValue(field, out var node))
-        {
-            return null;
-        }
-
-        return node is JsonValue value && value.GetValueKind() == JsonValueKind.String
-            ? value.GetValue<string>()
-            : null;
-    }
-
-    private static DateTimeOffset? ReadTimestamp(JsonNode? payload) =>
-        DateTimeOffset.TryParse(
-            ReadString(payload, "timestamp"),
-            CultureInfo.InvariantCulture,
-            DateTimeStyles.None,
-            out var parsed)
-            ? parsed
-            : null;
-
-    private static string? NullIfEmpty(string value) => string.IsNullOrEmpty(value) ? null : value;
 }

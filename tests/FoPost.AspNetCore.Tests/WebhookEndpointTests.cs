@@ -91,7 +91,7 @@ public class WebhookEndpointTests
     }
 
     [Fact]
-    public async Task A_signed_body_that_is_not_json_is_a_bad_request()
+    public async Task A_signed_body_that_is_not_json_is_rejected()
     {
         var recorder = new RecordingWebhookHandler();
         using var host = await StartAsync(recorder);
@@ -100,7 +100,27 @@ public class WebhookEndpointTests
         const string garbage = "not json";
         var response = await client.SendAsync(Request(garbage, Signature(garbage)));
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Empty(recorder.Received);
+    }
+
+    [Fact]
+    public async Task A_timestamped_signature_outside_the_tolerance_is_rejected()
+    {
+        var recorder = new RecordingWebhookHandler();
+        using var host = await StartAsync(recorder);
+        using var client = host.GetTestClient();
+
+        var stale = DateTimeOffset.UtcNow.AddSeconds(-600).ToUnixTimeSeconds().ToString();
+        var request = Request(Body, Signature(Body));
+        request.Headers.TryAddWithoutValidation(FoPostDefaults.TimestampHeader, stale);
+        request.Headers.TryAddWithoutValidation(
+            FoPostDefaults.TimestampedSignatureHeader,
+            Signature(stale + "." + Body));
+
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         Assert.Empty(recorder.Received);
     }
 
