@@ -19,13 +19,14 @@ jobs:
             9.0.x
 
       # ── Parent-from-source shim ──────────────────────────────────────────
-      # FoPost.Sdk is not on NuGet yet, so pack it from the parent repo into the
-      # local-packages/ source that NuGet.config already points at. Delete this
-      # step, the source, and the folder once FoPost.Sdk 0.1.0 is published.
+      # FoPost.Sdk 0.3.0 is not on NuGet yet, so pack it from the parent branch into
+      # the local-packages/ source NuGet.config points at. Delete this step, the
+      # source, and the folder once FoPost.Sdk 0.3.0 is published.
       - name: Check out FoPost.Sdk
         uses: actions/checkout@v4
         with:
           repository: fopost/fopost-dotnet
+          ref: feature/blog-articles
           path: .parent
           token: ${{ secrets.PARENT_REPO_TOKEN || github.token }}
 
