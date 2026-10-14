@@ -13,7 +13,8 @@ namespace FoPost.AspNetCore;
 ///     "BaseUrl": "https://api.fopost.com",
 ///     "Timeout": "00:00:30",
 ///     "MaxRetries": 3,
-///     "WebhookSecret": "whsec_..."
+///     "WebhookSecret": "whsec_...",
+///     "Blog": { "WebhookSecret": "whsec_..." }
 ///   }
 /// }
 /// </code>
@@ -62,6 +63,9 @@ public sealed class FoPostOptions : IValidatableObject
     /// <c>X-FoPost-Signature</c> header. Required only when <c>MapFoPostWebhook</c> is used.
     /// </summary>
     public string? WebhookSecret { get; set; }
+
+    /// <summary>Settings for the blog article receiver, bound from <c>FoPost:Blog</c>.</summary>
+    public FoPostBlogOptions Blog { get; set; } = new();
 
     IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
     {

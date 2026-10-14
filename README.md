@@ -15,6 +15,7 @@ adds is the wiring an ASP.NET Core app expects:
 - `services.AddFoPost(…)` — the options pattern, validated at startup, client registered in DI
 - an `IHttpClientFactory` client under the hood, so handlers and DNS behave
 - `app.MapFoPostWebhook("/fopost/webhook")` — raw-body signature verification and typed handlers
+- `app.MapFoPostArticles("/fopost/articles")` — receives published blog articles on your website
 - `services.AddFoPostHealthCheck()` — a health check that never mentions your key
 
 ## Requirements
@@ -72,6 +73,7 @@ app.Run();
 | `Timeout`       | `00:00:30`                 | Per-request timeout                                                 |
 | `MaxRetries`    | `3`                        | Attempts for a rate-limited request, honouring `Retry-After`        |
 | `WebhookSecret` | none                       | Verifies `X-FoPost-Signature`. Required only for `MapFoPostWebhook` |
+| `Blog:WebhookSecret` | none                  | The website secret from the blog settings page. Required only for `MapFoPostArticles` |
 
 Never commit the key. Use user-secrets in development and an environment variable in
 production — `FoPost__ApiKey`, or the SDK's own `FOPOST_API_KEY`, which is consulted when
@@ -144,11 +146,15 @@ recycled and DNS changes are picked up, which is what the rotation was for.
 ## Receiving webhooks
 
 FoPost signs every delivery with HMAC-SHA256 over the raw request body and sends it as
-`X-FoPost-Signature: sha256=<hex>`, alongside `X-FoPost-Event` and `X-FoPost-Delivery`.
+`X-FoPost-Signature: sha256=<hex>`, plus `X-FoPost-Signature-256` over
+`<timestamp>.<body>` with `X-FoPost-Timestamp`, alongside `X-FoPost-Event` and
+`X-FoPost-Delivery`.
 
-`MapFoPostWebhook` reads the raw bytes before anything can re-encode them, compares the
-digest in constant time, and answers `401` when it does not match — no handler runs. The
-endpoint is anonymous by design: the signature is its authentication.
+`MapFoPostWebhook` reads the raw bytes before anything can re-encode them and verifies them
+through `FoPostWebhooks.Verify` from `FoPost.Sdk`: the timestamped signature is preferred and
+refused when more than 300 seconds old, the plain one is accepted only when no timestamp was
+sent. Anything that does not verify is a `401` and no handler runs. The endpoint is anonymous
+by design: the signature is its authentication.
 
 ```csharp
 builder.Services.AddFoPostWebhookHandler<PublishedPostHandler>();
@@ -178,6 +184,32 @@ per send and is what to key on for idempotency.
 Events: `post.published`, `post.failed`, `post.partially_failed`, `delivery.published`,
 `delivery.failed`, `delivery.delayed`, `account.health_changed` — all on
 `FoPostWebhookEvents`.
+
+## Receive blog articles
+
+Set your site as the blog's website target in the dashboard and paste the website secret into
+`FoPost:Blog:WebhookSecret`. Then mount the receiver and register what to do with an article:
+
+```csharp
+builder.Services.AddFoPostArticleHandler(async (article, cancellationToken) =>
+{
+    // Store article.Title, article.Slug, article.BodyHtml, article.Images, …
+    // Image URLs are fetchable for six hours, so download your own copies here.
+    return $"https://yourbrand.com/blog/{article.Slug}";
+});
+
+app.MapFoPostArticles("/fopost/articles");
+```
+
+The endpoint verifies each delivery with `FoPostWebhooks.Verify`, answers `401` on a bad
+signature, `200 { "ok": true }` for the dashboard's connection test (`article.test`), and
+hands `article.published` to your handler as a `BlogArticlePublishedPayload`. Return the URL
+the article now lives at and the receiver echoes it as `{ "url": "…" }`; return `null` for
+`{ "ok": true }`. A class works too: implement `IFoPostArticlePublishedHandler` and register
+it with `AddFoPostArticleHandler<T>()`.
+
+The blog API itself (`settings`, `keywords`, `articles`) is `FoPostClient.Blog` from
+`FoPost.Sdk`; the injected client already exposes it.
 
 ## Health checks
 

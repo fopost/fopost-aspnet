@@ -12,6 +12,9 @@ public static class FoPostDefaults
     /// <summary>Default route <c>MapFoPostWebhook</c> listens on.</summary>
     public const string WebhookPath = "/fopost/webhook";
 
+    /// <summary>Default route <c>MapFoPostArticles</c> listens on.</summary>
+    public const string ArticlesPath = "/fopost/articles";
+
     /// <summary>Default name of the health check registered by <c>AddFoPostHealthCheck</c>.</summary>
     public const string HealthCheckName = "fopost";
 
@@ -23,4 +26,10 @@ public static class FoPostDefaults
 
     /// <summary>Delivery attempt id, unique per send.</summary>
     public const string DeliveryHeader = "X-FoPost-Delivery";
+
+    /// <summary>Unix seconds the delivery was signed at; pairs with <see cref="TimestampedSignatureHeader"/>.</summary>
+    public const string TimestampHeader = "X-FoPost-Timestamp";
+
+    /// <summary>Hex HMAC-SHA256 of <c>{timestamp}.{raw body}</c>, prefixed <c>sha256=</c>.</summary>
+    public const string TimestampedSignatureHeader = "X-FoPost-Signature-256";
 }

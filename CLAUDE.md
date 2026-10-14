@@ -43,8 +43,15 @@ src/FoPost.AspNetCore/
   FoPostOptions.cs                     bound from the "FoPost" configuration section
   FoPostDefaults.cs                    client name, webhook path, header names
   FoPostServiceCollectionExtensions.cs AddFoPost — three overloads
+  FoPostBlogOptions.cs                 bound from "FoPost:Blog"
+  Articles/
+    FoPostArticleEndpoint.cs           the handler behind MapFoPostArticles
+    FoPostArticleEndpointRouteBuilderExtensions.cs
+    FoPostArticleServiceCollectionExtensions.cs   AddFoPostArticleHandler
+    IFoPostArticlePublishedHandler.cs
   Webhooks/
-    FoPostWebhookSignature.cs          HMAC-SHA256 verify, constant time
+    FoPostWebhookSignature.cs          HMAC-SHA256 compute/verify kept for callers and tests
+    FoPostWebhookRequest.cs            raw body + header list for FoPostWebhooks.Verify
     FoPostWebhookEndpoint.cs           the handler behind MapFoPostWebhook
     FoPostWebhookEndpointRouteBuilderExtensions.cs
     FoPostWebhookServiceCollectionExtensions.cs   AddFoPostWebhookHandler<T>
@@ -79,6 +86,8 @@ That is the documented way to keep DNS fresh behind a long-lived `HttpClient`. D
 | `FoPost.FoPostClientOptions` | `FoPostClientOptions.cs` — `ApiKey`, `BearerToken`, `BaseUrl`, `Timeout`, `MaxRetries`, `HttpClient`, and the `Default*` constants |
 | `FoPost.FoPostException` and subclasses | `Errors/FoPostException.cs` — `Status`, `Code`, `Body` |
 | `FoPost.Resources.WorkspacesResource.ListAsync` | `Resources/WorkspacesResource.cs` — the health check's probe |
+| `FoPost.FoPostWebhooks.Verify`, `FoPostWebhookEnvelope`, `FoPostWebhookVerificationException` | `Webhooks/FoPostWebhooks.cs` — both endpoints verify through it |
+| `FoPost.BlogArticlePublishedPayload` | `Models/Blog.cs` — what `MapFoPostArticles` hands the handler |
 
 `FoPostClientOptions.HttpClient` is the reason `IHttpClientFactory` integration is possible at
 all: when it is set, the SDK neither configures nor disposes the client. That is documented on
@@ -92,34 +101,33 @@ Owned by `FoPost.Sdk`, repeated here only because the webhook endpoint has to kn
   retries on 429 honouring `Retry-After`.
 - Error envelope `{ "error": "<code>", "message": "<text>" }`; 402 may carry `upgrade_url`.
 
-**Webhook signature scheme**, read out of the API source
-(`fopost/apps/api/src/workers/webhook.worker.ts` and
-`services/webhook-dispatcher.ts`), not guessed:
+**Webhook signature scheme** is verified by `FoPostWebhooks.Verify` in `FoPost.Sdk`; the
+endpoints here only read raw bytes and headers and hand them over:
 
-- The API `JSON.stringify`s `{ event, data, timestamp }` and HMAC-SHA256s those UTF-8 bytes
-  with the webhook's stored secret, hex-encoded.
-- Headers sent: `X-FoPost-Signature: sha256=<hex>`, `X-FoPost-Event: <event>`,
-  `X-FoPost-Delivery: <delivery id>`.
-- There is **no timestamp in the signature** and no replay window, so nothing here can check
-  one. If the API adds `t=…,v1=…` later, this is where it changes.
+- `X-FoPost-Signature: sha256=<hex HMAC-SHA256(secret, rawBody)>`.
+- `X-FoPost-Timestamp: <unix seconds>` plus `X-FoPost-Signature-256` over
+  `<timestamp>.<rawBody>`; preferred when present, refused past 300 s.
+- `X-FoPost-Event: <event>`, `X-FoPost-Delivery: <delivery id>`.
+- A website blog target receives the same envelope signed with the per-workspace website
+  secret (`FoPost:Blog:WebhookSecret`); `article.test` is its connection test.
 - Delivery is retried 5 times with exponential backoff on any non-2xx; a webhook is
   auto-disabled after 10 consecutive failures.
 
 ## Parent dependency
 
-`FoPost.Sdk` is **not published to NuGet yet** (checked 2026-08-30). The manifest still
-declares the real coordinate — `<PackageReference Include="FoPost.Sdk" Version="0.1.0" />` —
-because that is what ships. To make the build green today, the parent is resolved from source:
+The manifest pins `<PackageReference Include="FoPost.Sdk" Version="0.3.0" />`, which is **not
+on NuGet yet** (0.2.0 is, checked 2026-10-11; 0.3.0 is the parent's `feature/blog-articles`
+branch). Until it is released the parent is resolved from source:
 
 - `NuGet.config` adds a `fopost-local` package source pointing at `local-packages/`.
-- Both workflows check out `fopost/fopost-dotnet` into `.parent/` and run
+- `ci.yml` checks out `fopost/fopost-dotnet@feature/blog-articles` into `.parent/` and runs
   `dotnet pack .parent/src/FoPost/FoPost.csproj -c Release -o local-packages` before restore.
-- Locally, do the same:
+- Locally, do the same from a checkout of that branch:
   ```bash
   dotnet pack ../fopost-dotnet/src/FoPost/FoPost.csproj -c Release -o local-packages
   ```
 
-**Delete the whole shim once `FoPost.Sdk` 0.1.0 is on NuGet**: the two workflow steps, the
+**Delete the whole shim once `FoPost.Sdk` 0.3.0 is on NuGet**: the two `ci.yml` steps, the
 `fopost-local` source in `NuGet.config`, the `local-packages/` folder, and its `.gitignore`
 entries. Nothing else references it.
 
