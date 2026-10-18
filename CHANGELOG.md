@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 - 2026-10-18
 
 - `MapFoPostArticles` receives published blog articles from a website target: verifies
   the delivery, answers `article.test`, and hands `article.published` to an
