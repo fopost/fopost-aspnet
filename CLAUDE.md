@@ -115,24 +115,10 @@ endpoints here only read raw bytes and headers and hand them over:
 
 ## Parent dependency
 
-The manifest pins `<PackageReference Include="FoPost.Sdk" Version="0.3.0" />`, which is **not
-on NuGet yet** (0.2.0 is, checked 2026-10-11; 0.3.0 is the parent's `feature/blog-articles`
-branch). Until it is released the parent is resolved from source:
-
-- `NuGet.config` adds a `fopost-local` package source pointing at `local-packages/`.
-- `ci.yml` checks out `fopost/fopost-dotnet@feature/blog-articles` into `.parent/` and runs
-  `dotnet pack .parent/src/FoPost/FoPost.csproj -c Release -o local-packages` before restore.
-- Locally, do the same from a checkout of that branch:
-  ```bash
-  dotnet pack ../fopost-dotnet/src/FoPost/FoPost.csproj -c Release -o local-packages
-  ```
-
-**Delete the whole shim once `FoPost.Sdk` 0.3.0 is on NuGet**: the two `ci.yml` steps, the
-`fopost-local` source in `NuGet.config`, the `local-packages/` folder, and its `.gitignore`
-entries. Nothing else references it.
-
-If `fopost/fopost-dotnet` is private, the cross-repo checkout needs a PAT in the repo secret
-`PARENT_REPO_TOKEN`; the workflows fall back to `github.token` when it is absent.
+The manifest pins `<PackageReference Include="FoPost.Sdk" Version="0.3.0" />`, which is on
+NuGet (checked 2026-10-18), so a plain `dotnet restore` resolves it from nuget.org. The
+parent-from-source shim (`fopost-local` source, `local-packages/`, the `.parent/` checkout in
+CI) was removed the same day; reintroduce it only if a build has to track an unreleased parent.
 
 ## Commands
 
@@ -143,8 +129,6 @@ dotnet test -c Release
 dotnet pack src/FoPost.AspNetCore/FoPost.AspNetCore.csproj -c Release -o artifacts
 dotnet run --project examples/MinimalApi
 ```
-
-Run the parent-pack step above first, or restore will fail on `FoPost.Sdk`.
 
 ## Conventions
 
@@ -177,8 +161,7 @@ Run the parent-pack step above first, or restore will fail on `FoPost.Sdk`.
 
 Tag `v<version>` matching `<Version>` in `src/FoPost.AspNetCore/FoPost.AspNetCore.csproj`;
 `.github/workflows/release.yml` verifies the two agree, then publishes to NuGet.
-Requires repo secret **`NUGET_API_KEY`** on the `nuget` environment (and optionally
-`PARENT_REPO_TOKEN`, see "Parent dependency").
+Requires repo secret **`NUGET_API_KEY`** on the `nuget` environment.
 
 ## Git
 
